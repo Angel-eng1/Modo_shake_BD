@@ -1,6 +1,7 @@
 package modo_shake;
 
 import java.sql.Connection;
+import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -48,45 +49,45 @@ public class ProductoDAO {
     }
 
     public int guardar(Producto producto) throws SQLException {
-        if (producto.getId() == 0) {
-            String sql = "INSERT INTO productos (id_categoria,nombre,descripcion,precio,estado) VALUES (?,?,?,?,?)";
-            try (Connection cn = ConexionBD.abrir();
-                 PreparedStatement ps = cn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
-                enlazar(ps, producto);
-                ps.executeUpdate();
-                try (ResultSet keys = ps.getGeneratedKeys()) {
-                    if (keys.next()) return keys.getInt(1);
+        try (Connection cn = ConexionBD.abrir();
+             CallableStatement cs = cn.prepareCall("{call sp_guardar_producto(?,?,?,?,?,?)}")) {
+            cs.setInt(1, producto.getId());
+            cs.setInt(2, producto.getCategoriaId());
+            cs.setString(3, producto.getNombre());
+            cs.setString(4, producto.getDescripcion());
+            cs.setBigDecimal(5, producto.getPrecio());
+            cs.setString(6, producto.isActivo() ? "Activo" : "Inactivo");
+            boolean resultado = cs.execute();
+            while (!resultado && cs.getUpdateCount() != -1) resultado = cs.getMoreResults();
+            if (resultado) {
+                try (ResultSet rs = cs.getResultSet()) {
+                    if (rs.next()) return rs.getInt("id_producto");
                 }
-                throw new SQLException("MySQL no devolvió el identificador del producto creado.");
             }
+            throw new SQLException("El procedimiento no devolvio el identificador del producto.");
         }
-        String sql = "UPDATE productos SET id_categoria=?, nombre=?, descripcion=?, precio=?, estado=? WHERE id_producto=?";
-        try (Connection cn = ConexionBD.abrir(); PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, producto.getCategoriaId());
-            ps.setString(2, producto.getNombre());
-            ps.setString(3, producto.getDescripcion());
-            ps.setBigDecimal(4, producto.getPrecio());
-            ps.setString(5, producto.isActivo() ? "Activo" : "Inactivo");
-            ps.setInt(6, producto.getId());
-            ps.executeUpdate();
-        }
-        return producto.getId();
     }
 
     public void eliminar(int id) throws SQLException {
         try (Connection cn = ConexionBD.abrir();
-             PreparedStatement ps = cn.prepareStatement("DELETE FROM productos WHERE id_producto=?")) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
+             CallableStatement cs = cn.prepareCall("{call sp_eliminar_producto(?)}")) {
+            cs.setInt(1, id);
+            cs.execute();
         }
     }
 
-    private void enlazar(PreparedStatement ps, Producto p) throws SQLException {
-        ps.setInt(1, p.getCategoriaId());
-        ps.setString(2, p.getNombre());
-        ps.setString(3, p.getDescripcion());
-        ps.setBigDecimal(4, p.getPrecio());
-        ps.setString(5, p.isActivo() ? "Activo" : "Inactivo");
+    public List<Producto> buscar(String texto) throws SQLException {
+        List<Producto> productos = new ArrayList<>();
+        String sql = CONSULTA + " WHERE p.nombre LIKE ? OR c.nombre LIKE ? ORDER BY p.id_producto";
+        try (Connection cn = ConexionBD.abrir(); PreparedStatement ps = cn.prepareStatement(sql)) {
+            String filtro = "%" + texto.trim() + "%";
+            ps.setString(1, filtro);
+            ps.setString(2, filtro);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) productos.add(leer(rs));
+            }
+        }
+        return productos;
     }
 
     private Producto leer(ResultSet rs) throws SQLException {
