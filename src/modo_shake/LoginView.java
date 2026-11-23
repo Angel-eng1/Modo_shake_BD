@@ -24,6 +24,7 @@ public class LoginView extends JFrame {
     private final JButton configurarAdmin = new JButton("Configurar administrador inicial");
 
     public LoginView() {
+        FiltrosEntrada.texto(campoUsuario, 40);
         setTitle("Modo Shake | Inicio de sesión");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(900, 650)); setSize(1100, 760);

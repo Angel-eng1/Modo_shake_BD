@@ -52,6 +52,8 @@ public class EmpleadosController {
         JComboBox<String> estado = new JComboBox<>(new String[]{"Activo","Inactivo"});
         estado.setSelectedItem(e.getEstado());
         JPasswordField clave = new JPasswordField();
+        FiltrosEntrada.texto(nombre,60); FiltrosEntrada.texto(apellido,60); FiltrosEntrada.texto(telefono,20);
+        FiltrosEntrada.texto(puesto,40); FiltrosEntrada.texto(usuario,40);
         JPanel panel = new JPanel(new GridLayout(0,1,4,4));
         panel.add(new javax.swing.JLabel("Nombre")); panel.add(nombre);
         panel.add(new javax.swing.JLabel("Apellido")); panel.add(apellido);

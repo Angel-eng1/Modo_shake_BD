@@ -33,6 +33,22 @@ public class PedidoDAO {
         return filas;
     }
 
+    public List<Object[]> reporte(java.time.LocalDate inicio, java.time.LocalDate fin) throws SQLException {
+        List<Object[]> filas = new ArrayList<>();
+        try (Connection cn = ConexionBD.abrir();
+             java.sql.CallableStatement cs = cn.prepareCall("{call sp_consultar_pedidos(?,?)}")) {
+            cs.setDate(1, java.sql.Date.valueOf(inicio));
+            cs.setDate(2, java.sql.Date.valueOf(fin));
+            try (ResultSet rs = cs.executeQuery()) {
+                while (rs.next()) filas.add(new Object[]{rs.getInt("id_pedido"), rs.getDate("fecha"),
+                    rs.getString("cliente"), rs.getString("empleado"), rs.getString("categoria"),
+                    rs.getString("producto"), rs.getInt("cantidad"), rs.getBigDecimal("precio_unitario"),
+                    rs.getBigDecimal("subtotal"), rs.getString("estado")});
+            }
+        }
+        return filas;
+    }
+
     public int crear(Integer clienteId, int empleadoId, List<DetallePedidoNuevo> detalles) throws SQLException {
         if (detalles == null || detalles.isEmpty()) throw new SQLException("Agrega al menos un producto al pedido.");
         StringBuilder json = new StringBuilder("[");

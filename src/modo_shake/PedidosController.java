@@ -31,6 +31,7 @@ public class PedidosController {
         vista.alNuevo(this::nuevo);
         vista.alEditar(this::cambiarEstado);
         vista.alActualizar(this::refrescar);
+        vista.agregarAccion("Reporte por fechas", this::reporte);
         refrescar();
     }
     public VistaTablaModulo getVista() { return vista; }
@@ -38,6 +39,31 @@ public class PedidosController {
     private void refrescar() {
         try { pedidos = pedidoDAO.listar(); vista.cargarFilas(pedidos); }
         catch (SQLException ex) { error(ex); }
+    }
+
+    private void reporte() {
+        javax.swing.JTextField inicio = new javax.swing.JTextField(java.time.LocalDate.now().withDayOfMonth(1).toString());
+        javax.swing.JTextField fin = new javax.swing.JTextField(java.time.LocalDate.now().toString());
+        FiltrosEntrada.texto(inicio, 10); FiltrosEntrada.texto(fin, 10);
+        JPanel panel = new JPanel(new GridLayout(0, 1, 5, 5));
+        panel.add(new javax.swing.JLabel("Fecha inicial (AAAA-MM-DD)")); panel.add(inicio);
+        panel.add(new javax.swing.JLabel("Fecha final (AAAA-MM-DD)")); panel.add(fin);
+        if (JOptionPane.showConfirmDialog(vista, panel, "Consultar pedidos", JOptionPane.OK_CANCEL_OPTION)
+                != JOptionPane.OK_OPTION) return;
+        try {
+            java.time.LocalDate desde = java.time.LocalDate.parse(inicio.getText().trim());
+            java.time.LocalDate hasta = java.time.LocalDate.parse(fin.getText().trim());
+            DefaultTableModel modelo = new DefaultTableModel(new String[]{"Pedido", "Fecha", "Cliente", "Empleado",
+                "Categoria", "Producto", "Cantidad", "Precio", "Subtotal", "Estado"}, 0) {
+                @Override public boolean isCellEditable(int fila, int columna) { return false; }
+            };
+            for (Object[] fila : pedidoDAO.reporte(desde, hasta)) modelo.addRow(fila);
+            JScrollPane scroll = new JScrollPane(new JTable(modelo));
+            scroll.setPreferredSize(new java.awt.Dimension(1000, 400));
+            JOptionPane.showMessageDialog(vista, scroll, "Reporte de pedidos", JOptionPane.PLAIN_MESSAGE);
+        } catch (java.time.format.DateTimeParseException ex) {
+            JOptionPane.showMessageDialog(vista, "Ingresa fechas validas con formato AAAA-MM-DD.");
+        } catch (SQLException ex) { error(ex); }
     }
 
     private void nuevo() {

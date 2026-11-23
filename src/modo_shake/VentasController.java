@@ -37,6 +37,7 @@ public class VentasController {
         if (saldo.signum() <= 0) { aviso("Este pedido no tiene saldo pendiente."); return; }
         JComboBox<String> metodo = new JComboBox<>(new String[]{"Efectivo", "Tarjeta", "Transferencia"});
         JTextField monto = new JTextField(saldo.toPlainString());
+        FiltrosEntrada.decimal(monto,8,2);
         JPanel panel = new JPanel(new GridLayout(0, 1, 4, 4));
         panel.add(new javax.swing.JLabel("Método de pago")); panel.add(metodo);
         panel.add(new javax.swing.JLabel("Monto (saldo: " + saldo.toPlainString() + ")")); panel.add(monto);

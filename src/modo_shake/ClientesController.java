@@ -44,6 +44,7 @@ public class ClientesController {
         JTextField nombre = new JTextField(original.getNombre());
         JTextField telefono = new JTextField(original.getTelefono());
         JTextField correo = new JTextField(original.getCorreo());
+        FiltrosEntrada.texto(nombre,60); FiltrosEntrada.texto(telefono,20); FiltrosEntrada.texto(correo,120);
         JPanel panel = new JPanel(new GridLayout(0, 1, 4, 4));
         panel.add(new javax.swing.JLabel("Nombre")); panel.add(nombre);
         panel.add(new javax.swing.JLabel("Teléfono")); panel.add(telefono);

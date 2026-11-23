@@ -30,6 +30,7 @@ public class InventarioController {
         int fila = vista.filaSeleccionada();
         if (fila < 0) { aviso("Selecciona un ingrediente de la tabla."); return; }
         JTextField campo = new JTextField(String.valueOf(filas.get(fila)[3]));
+        FiltrosEntrada.decimal(campo,7,3);
         int respuesta = JOptionPane.showConfirmDialog(vista, campo,
                 "Nueva cantidad para " + filas.get(fila)[1] + " (" + filas.get(fila)[2] + ")",
                 JOptionPane.OK_CANCEL_OPTION);

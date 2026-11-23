@@ -20,6 +20,7 @@ public class ProductosController {
     public ProductosView getVista() { return vista; }
 
     private void conectarEventos() {
+        vista.alBuscar(this::buscar);
         vista.alGuardar(this::guardar);
         vista.alActualizar(this::actualizar);
         vista.alEliminar(this::eliminar);
@@ -37,8 +38,14 @@ public class ProductosController {
     }
 
     private void refrescarProductos() throws SQLException {
-        productos = productoDAO.listar();
+        seleccionado = -1;
+        productos = productoDAO.buscar(vista.getBusqueda());
         mostrarTabla();
+    }
+
+    private void buscar() {
+        try { refrescarProductos(); limpiar(); }
+        catch (SQLException ex) { mostrarError(ex); }
     }
 
     private Producto leerFormulario(int id) {

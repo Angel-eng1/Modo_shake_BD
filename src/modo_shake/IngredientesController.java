@@ -44,6 +44,7 @@ public class IngredientesController {
         JTextField minimo = new JTextField(original.getStockMinimo().toPlainString());
         JComboBox<String> estado = new JComboBox<>(new String[]{"Activo", "Inactivo"});
         estado.setSelectedItem(original.isActivo() ? "Activo" : "Inactivo");
+        FiltrosEntrada.texto(nombre,80); FiltrosEntrada.texto(unidad,20); FiltrosEntrada.decimal(minimo,7,3);
         JPanel panel = new JPanel(new GridLayout(0, 1, 4, 4));
         panel.add(new javax.swing.JLabel("Nombre")); panel.add(nombre);
         panel.add(new javax.swing.JLabel("Unidad (g, ml, unidad, etc.)")); panel.add(unidad);

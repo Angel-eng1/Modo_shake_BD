@@ -78,6 +78,11 @@ public class VistaTablaModulo extends JPanel {
     }
     public int filaSeleccionada() { return tabla.getSelectedRow() < 0 ? -1 : tabla.convertRowIndexToModel(tabla.getSelectedRow()); }
     public Object valor(int fila, int columna) { return modelo.getValueAt(fila, columna); }
+    public void agregarAccion(String titulo, Runnable accion) {
+        JButton boton = new JButton(titulo);
+        boton.addActionListener(e -> accion.run());
+        nuevo.getParent().add(boton);
+    }
     public void alNuevo(Runnable a) { nuevo.addActionListener(e -> a.run()); }
     public void alEditar(Runnable a) { editar.addActionListener(e -> a.run()); }
     public void alEliminar(Runnable a) { eliminar.addActionListener(e -> a.run()); }

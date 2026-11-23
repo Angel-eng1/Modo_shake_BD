@@ -39,9 +39,14 @@ public class ProductosView extends JPanel {
     private final DefaultTableModel modelo=new DefaultTableModel(new Object[]{"ID","PRODUCTO","CATEGORÍA","PRECIO","ESTADO","ACCIONES"},0) {
         @Override public boolean isCellEditable(int row,int column){return false;}
     };
+    private final JTextField campoBusqueda = new JTextField(22);
+    private final JButton buscar = new JButton("Buscar");
     private final JTable tabla=new JTable(modelo);
 
     public ProductosView() {
+        FiltrosEntrada.texto(campoNombre, 90);
+        FiltrosEntrada.texto(campoDescripcion, 220);
+        FiltrosEntrada.decimal(campoPrecio, 8, 2);
         setLayout(new BorderLayout(0,20)); setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(25,28,24,28));
         JPanel titulo=new JPanel(new BorderLayout()); titulo.setOpaque(false);
@@ -54,7 +59,14 @@ public class ProductosView extends JPanel {
         JPanel tablaCard=Estilo.tarjeta(Color.WHITE,14); tablaCard.setLayout(new BorderLayout(0,12));
         tablaCard.setBorder(BorderFactory.createEmptyBorder(16,17,12,17));
         JLabel etiquetaTabla=new JLabel("Productos Registrados"); etiquetaTabla.setFont(new Font("SansSerif",Font.BOLD,18));
-        tablaCard.add(etiquetaTabla,BorderLayout.NORTH); configurarTabla();
+        JPanel busqueda = new JPanel(new BorderLayout(10, 0));
+        busqueda.setOpaque(false);
+        busqueda.add(etiquetaTabla, BorderLayout.WEST);
+        campoBusqueda.setToolTipText("Buscar por nombre o categoria");
+        FiltrosEntrada.texto(campoBusqueda, 90);
+        busqueda.add(campoBusqueda, BorderLayout.CENTER);
+        busqueda.add(buscar, BorderLayout.EAST);
+        tablaCard.add(busqueda,BorderLayout.NORTH); configurarTabla();
         tablaCard.add(new JScrollPane(tabla),BorderLayout.CENTER); centro.add(tablaCard,BorderLayout.CENTER);
         add(centro,BorderLayout.CENTER);
     }
@@ -114,6 +126,11 @@ public class ProductosView extends JPanel {
     public void setFormulario(Producto p){campoId.setText(String.format("PROD-%03d",p.getId()));campoNombre.setText(p.getNombre());for(int i=0;i<campoCategoria.getItemCount();i++){Object item=campoCategoria.getItemAt(i);if(item instanceof Categoria&&((Categoria)item).getId()==p.getCategoriaId()){campoCategoria.setSelectedIndex(i);break;}}campoPrecio.setText(p.getPrecio().toPlainString());campoDescripcion.setText(p.getDescripcion());activo.setSelected(p.isActivo());inactivo.setSelected(!p.isActivo());}
     public void setIdSiguiente(int id){campoId.setText(String.format("PROD-%03d",id));}
     public void limpiarFormulario(int siguiente){campoId.setText(String.format("PROD-%03d",siguiente));campoNombre.setText("");campoCategoria.setSelectedIndex(0);campoPrecio.setText("");campoDescripcion.setText("");activo.setSelected(true);tabla.clearSelection();}
+    public String getBusqueda() { return campoBusqueda.getText().trim(); }
+    public void alBuscar(Runnable accion) {
+        buscar.addActionListener(e -> accion.run());
+        campoBusqueda.addActionListener(e -> accion.run());
+    }
     public void alGuardar(Runnable a){guardar.addActionListener(e->a.run());}
     public void alActualizar(Runnable a){actualizar.addActionListener(e->a.run());}
     public void alEliminar(Runnable a){eliminar.addActionListener(e->a.run());}
