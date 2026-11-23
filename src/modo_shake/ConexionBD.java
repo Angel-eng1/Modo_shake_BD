@@ -14,9 +14,19 @@ public final class ConexionBD {
     private static final String URL_PREDETERMINADA =
             "jdbc:mysql://localhost:3306/modo_shake?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Bogota&connectTimeout=5000&socketTimeout=10000";
 
+    private static final ConexionBD INSTANCIA = new ConexionBD();
+
     private ConexionBD() { }
 
+    public static ConexionBD getInstancia() {
+        return INSTANCIA;
+    }
+
     public static Connection abrir() throws SQLException {
+        return getInstancia().crearConexion();
+    }
+
+    private Connection crearConexion() throws SQLException {
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
         } catch (ClassNotFoundException ex) {
