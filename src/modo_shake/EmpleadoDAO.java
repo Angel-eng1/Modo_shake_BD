@@ -36,46 +36,11 @@ public class EmpleadoDAO {
 
     public void crearPrimerAdministrador(String nombre, String apellido, String usuario,
                                          char[] contrasena) throws SQLException {
-        String comprobar = """
-            SELECT COUNT(*)
-            FROM empleados e JOIN roles r ON r.id_rol = e.id_rol
-            WHERE r.nombre = 'ADMIN' AND e.estado = 'Activo'
-              AND e.contrasena_hash LIKE 'PBKDF2$%'
-            """;
-        String insertar = """
-            INSERT INTO empleados
-                (nombre, apellido, puesto, id_rol, usuario, contrasena_hash, estado)
-            SELECT ?, ?, 'Administradora', id_rol, ?, ?, 'Activo'
-            FROM roles WHERE nombre = 'ADMIN'
-            """;
-        String hash = Contrasenas.generarHash(contrasena);
-        Arrays.fill(contrasena, '\0');
-        try (Connection cn = ConexionBD.abrir()) {
-            cn.setAutoCommit(false);
-            try (Statement st = cn.createStatement(); ResultSet rs = st.executeQuery(comprobar)) {
-                rs.next();
-                if (rs.getInt(1) > 0) {
-                    cn.rollback();
-                    throw new SQLException("Ya existe un administrador activo configurado.");
-                }
-            }
-            try (PreparedStatement ps = cn.prepareStatement(insertar)) {
-                ps.setString(1, nombre);
-                ps.setString(2, apellido);
-                ps.setString(3, usuario);
-                ps.setString(4, hash);
-                if (ps.executeUpdate() != 1) {
-                    cn.rollback();
-                    throw new SQLException("No se encontró el perfil ADMIN. Ejecuta primero el script de roles.");
-                }
-            } catch (SQLException ex) {
-                cn.rollback();
-                throw ex;
-            }
-            cn.commit();
-        } finally {
-            Arrays.fill(contrasena, '\0');
-        }
+        try {
+            if (contrasena == null || contrasena.length < 8) throw new SQLException("La clave requiere al menos 8 caracteres.");
+            Rutinas.ejecutar("{call sp_crear_primer_admin(?,?,?,?)}", nombre, apellido, usuario,
+                    Contrasenas.generarHash(contrasena));
+        } finally { if (contrasena != null) Arrays.fill(contrasena, '\0'); }
     }
 
     public List<Empleado> listar() throws SQLException {
@@ -95,49 +60,15 @@ public class EmpleadoDAO {
         return empleados;
     }
 
-    public void guardar(Empleado empleado, char[] contrasena) throws SQLException {
-        boolean nuevo = empleado.getId() == 0;
-        if (nuevo && (contrasena == null || contrasena.length < 8))
-            throw new SQLException("La contraseña para un empleado nuevo debe tener al menos 8 caracteres.");
-        String hash = contrasena == null || contrasena.length == 0 ? null : Contrasenas.generarHash(contrasena);
-        if (contrasena != null) Arrays.fill(contrasena, '\0');
-        String sql = nuevo
-            ? """
-              INSERT INTO empleados(nombre,apellido,telefono,puesto,id_rol,usuario,contrasena_hash,estado)
-              SELECT ?,?,?,?,r.id_rol,?,?,? FROM roles r WHERE r.nombre=?
-              """
-            : hash == null
-              ? """
-                UPDATE empleados e JOIN roles r ON r.nombre=?
-                SET e.nombre=?,e.apellido=?,e.telefono=?,e.puesto=?,e.id_rol=r.id_rol,
-                    e.usuario=?,e.estado=? WHERE e.id_empleado=?
-                """
-              : """
-                UPDATE empleados e JOIN roles r ON r.nombre=?
-                SET e.nombre=?,e.apellido=?,e.telefono=?,e.puesto=?,e.id_rol=r.id_rol,
-                    e.usuario=?,e.contrasena_hash=?,e.estado=? WHERE e.id_empleado=?
-                """;
-        try (Connection cn = ConexionBD.abrir(); PreparedStatement ps = cn.prepareStatement(sql)) {
-            if (nuevo) {
-                ps.setString(1,empleado.getNombre()); ps.setString(2,empleado.getApellido());
-                ps.setString(3,empleado.getTelefono().isBlank()?null:empleado.getTelefono());
-                ps.setString(4,empleado.getPuesto()); ps.setString(5,empleado.getUsuario());
-                ps.setString(6,hash); ps.setString(7,empleado.getEstado()); ps.setString(8,empleado.getPerfil());
-            } else if (hash == null) {
-                ps.setString(1,empleado.getPerfil()); ps.setString(2,empleado.getNombre());
-                ps.setString(3,empleado.getApellido()); ps.setString(4,empleado.getTelefono().isBlank()?null:empleado.getTelefono());
-                ps.setString(5,empleado.getPuesto()); ps.setString(6,empleado.getUsuario());
-                ps.setString(7,empleado.getEstado()); ps.setInt(8,empleado.getId());
-            } else {
-                ps.setString(1,empleado.getPerfil()); ps.setString(2,empleado.getNombre());
-                ps.setString(3,empleado.getApellido()); ps.setString(4,empleado.getTelefono().isBlank()?null:empleado.getTelefono());
-                ps.setString(5,empleado.getPuesto()); ps.setString(6,empleado.getUsuario());
-                ps.setString(7,hash); ps.setString(8,empleado.getEstado()); ps.setInt(9,empleado.getId());
-            }
-            if (ps.executeUpdate() != 1) throw new SQLException("No se encontró el perfil o empleado indicado.");
-        } finally {
-            if (contrasena != null) Arrays.fill(contrasena, '\0');
-        }
+    public void guardar(Empleado e, char[] contrasena) throws SQLException {
+        try {
+            boolean cambiar = contrasena != null && contrasena.length > 0;
+            if ((e.getId() == 0 || cambiar) && (contrasena == null || contrasena.length < 8))
+                throw new SQLException("La clave requiere al menos 8 caracteres.");
+            String hash = cambiar ? Contrasenas.generarHash(contrasena) : null;
+            Rutinas.ejecutar("{call sp_guardar_empleado(?,?,?,?,?,?,?,?,?)}", e.getId(), e.getNombre(),
+                    e.getApellido(), e.getTelefono(), e.getPuesto(), e.getUsuario(), e.getPerfil(), e.getEstado(), hash);
+        } finally { if (contrasena != null) Arrays.fill(contrasena, '\0'); }
     }
 
 }

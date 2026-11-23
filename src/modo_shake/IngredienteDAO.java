@@ -27,24 +27,11 @@ public class IngredienteDAO {
     }
 
     public void guardar(Ingrediente i) throws SQLException {
-        String sql = i.getId() == 0
-                ? "INSERT INTO ingredientes(nombre,unidad_medida,stock_minimo,estado) VALUES(?,?,?,?)"
-                : "UPDATE ingredientes SET nombre=?,unidad_medida=?,stock_minimo=?,estado=? WHERE id_ingrediente=?";
-        try (Connection cn = ConexionBD.abrir(); PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setString(1, i.getNombre());
-            ps.setString(2, i.getUnidad());
-            ps.setBigDecimal(3, i.getStockMinimo());
-            ps.setString(4, i.isActivo() ? "Activo" : "Inactivo");
-            if (i.getId() != 0) ps.setInt(5, i.getId());
-            ps.executeUpdate();
-        }
+        Rutinas.ejecutar("{call sp_guardar_ingrediente(?,?,?,?,?)}", i.getId(), i.getNombre(),
+                i.getUnidad(), i.getStockMinimo(), i.isActivo() ? "Activo" : "Inactivo");
     }
 
     public void eliminar(int id) throws SQLException {
-        try (Connection cn = ConexionBD.abrir();
-             PreparedStatement ps = cn.prepareStatement("DELETE FROM ingredientes WHERE id_ingrediente=?")) {
-            ps.setInt(1, id);
-            ps.executeUpdate();
-        }
+        Rutinas.ejecutar("{call sp_eliminar_ingrediente(?)}", id);
     }
 }

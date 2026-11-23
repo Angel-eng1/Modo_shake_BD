@@ -37,16 +37,6 @@ public class InventarioDAO {
     }
 
     public void ajustar(int ingredienteId, BigDecimal cantidad) throws SQLException {
-        String sql = """
-            INSERT INTO inventario(ingrediente_id,cantidad_actual,fecha_actualizacion)
-            VALUES(?,?,CURRENT_DATE())
-            ON DUPLICATE KEY UPDATE cantidad_actual=VALUES(cantidad_actual),
-                                    fecha_actualizacion=CURRENT_DATE()
-            """;
-        try (Connection cn = ConexionBD.abrir(); PreparedStatement ps = cn.prepareStatement(sql)) {
-            ps.setInt(1, ingredienteId);
-            ps.setBigDecimal(2, cantidad);
-            ps.executeUpdate();
-        }
+        Rutinas.ejecutar("{call sp_ajustar_inventario(?,?)}", ingredienteId, cantidad);
     }
 }
