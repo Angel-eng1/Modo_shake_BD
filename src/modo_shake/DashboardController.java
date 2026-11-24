@@ -6,11 +6,13 @@ import javax.swing.JOptionPane;
 public class DashboardController {
     private final UsuarioSesion sesion;
     private DashboardView vista;
+    private RecetasController recetas;
 
     public DashboardController(UsuarioSesion sesion) { this.sesion = sesion; }
 
     public void mostrar() {
         ProductosController productos = new ProductosController();
+        recetas = new RecetasController();
         PedidosController pedidos = new PedidosController(sesion);
         ClientesController clientes = new ClientesController();
         IngredientesController ingredientes = new IngredientesController();
@@ -25,6 +27,7 @@ public class DashboardController {
         }
         vista = new DashboardView(sesion, productos.getVista(), resumen);
         vista.definirSeccion("Pedidos", pedidos.getVista());
+        vista.definirSeccion("Recetas", recetas.getVista());
         vista.definirSeccion("Clientes", clientes.getVista());
         vista.definirSeccion("Ingredientes", ingredientes.getVista());
         if (sesion.esAdministrador()) {
@@ -34,6 +37,9 @@ public class DashboardController {
         }
         vista.alNavegar(this::navegar);
         vista.alCerrarSesion(this::cerrarSesion);
+        vista.alCerrarVentana(() -> {
+            if (recetas.permitirSalida()) vista.dispose();
+        });
         vista.setVisible(true);
     }
 
@@ -43,10 +49,20 @@ public class DashboardController {
                     "Acceso restringido", JOptionPane.WARNING_MESSAGE);
             return;
         }
+        if (!seccion.equals("Recetas") && !recetas.permitirSalida()) return;
+        if (seccion.equals("Inicio")) {
+            try {
+                vista.actualizarInicio(sesion, new DashboardDAO().cargar());
+            } catch (SQLException ex) {
+                JOptionPane.showMessageDialog(vista, "No se pudo actualizar el resumen. Revisa la conexión a MySQL.",
+                        "Panel principal", JOptionPane.WARNING_MESSAGE);
+            }
+        }
         vista.mostrarSeccion(seccion);
     }
 
     private void cerrarSesion() {
+        if (!recetas.permitirSalida()) return;
         vista.dispose();
         new LoginController().iniciar();
     }

@@ -18,22 +18,24 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.table.DefaultTableModel;
 
 public class DashboardView extends JFrame {
     private final JPanel contenido=new JPanel(new CardLayout());
     private final Map<String,JButton> botonesMenu=new LinkedHashMap<>();
+    private final JLabel tituloSeccion = new JLabel("Inicio");
+    private JPanel panelInicio;
     private Runnable accionCerrarSesion=()->{};
     private java.util.function.Consumer<String> accionNavegar=s->{};
 
     public DashboardView(UsuarioSesion sesion,ProductosView productos,DashboardDAO.ResumenDashboard resumen){
-        setTitle("Modo Shake | Panel administrativo");setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setTitle("Modo Shake | " + (sesion.esAdministrador() ? "Administración" : "Operaciones"));setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setMinimumSize(new Dimension(1100,720));setSize(1500,900);setLocationRelativeTo(null);
         setLayout(new BorderLayout());getContentPane().setBackground(Estilo.FONDO);
         add(crearMenu(sesion),BorderLayout.WEST);add(crearArea(sesion),BorderLayout.CENTER);
-        contenido.add(crearInicio(sesion,resumen),"Inicio");contenido.add(productos,"Productos");
+        panelInicio = crearInicio(sesion,resumen);
+        contenido.add(panelInicio,"Inicio");contenido.add(productos,"Productos");
         mostrarSeccion("Inicio");
     }
     private JPanel crearMenu(UsuarioSesion sesion){
@@ -44,7 +46,7 @@ public class DashboardView extends JFrame {
         JPanel textos=new JPanel(new GridLayout(2,1));textos.setOpaque(false);JLabel nombre=new JLabel("Modo Shake");nombre.setForeground(Estilo.VERDE_OSCURO);nombre.setFont(Estilo.NEGRITA);JLabel subt=new JLabel(sesion.esAdministrador()?"Panel Administrativo":"Panel de Usuario");subt.setFont(new Font("SansSerif",Font.PLAIN,11));subt.setForeground(Estilo.TEXTO_SUAVE);textos.add(nombre);textos.add(subt);
         marca.add(circulo,BorderLayout.WEST);marca.add(textos,BorderLayout.CENTER);menu.add(marca,BorderLayout.NORTH);
         JPanel opciones=new JPanel(new GridLayout(0,1,0,7));opciones.setOpaque(false);opciones.setBorder(BorderFactory.createEmptyBorder(0,10,10,10));
-        String[][] items={{"Inicio","▦"},{"Pedidos","◈"},{"Productos","⚒"},{"Ingredientes","♧"},{"Inventario","▣"},{"Clientes","♙"},{"Ventas","▤"},{"Empleados","♟"}};
+        String[][] items={{"Inicio","▦"},{"Pedidos","◈"},{"Productos","⚒"},{"Recetas","≡"},{"Ingredientes","♧"},{"Inventario","▣"},{"Clientes","♙"},{"Ventas","▤"},{"Empleados","♟"}};
         for(String[] item:items){String seccion=item[0];
             if(!sesion.esAdministrador()&&(seccion.equals("Inventario")||seccion.equals("Ventas")||seccion.equals("Empleados")))continue;
             JButton b=Estilo.boton(item[1]+"   "+seccion,Estilo.LATERAL,Estilo.TEXTO_SUAVE);b.setHorizontalAlignment(SwingConstants.LEFT);b.setFont(Estilo.NORMAL);b.setPreferredSize(new Dimension(180,42));b.addActionListener(e->accionNavegar.accept(seccion));botonesMenu.put(seccion,b);opciones.add(b);}
@@ -56,9 +58,9 @@ public class DashboardView extends JFrame {
     private JPanel crearArea(UsuarioSesion sesion){
         JPanel area=new JPanel(new BorderLayout());area.setBackground(Estilo.FONDO);
         JPanel barra=new JPanel(new BorderLayout());barra.setBackground(new Color(253,251,250));barra.setBorder(BorderFactory.createMatteBorder(0,0,1,0,Estilo.BORDE));barra.setPreferredSize(new Dimension(0,62));
-        JTextField buscar=new JTextField("⌕   Buscar...");buscar.setFont(Estilo.NORMAL);buscar.setForeground(Estilo.TEXTO_SUAVE);buscar.setPreferredSize(new Dimension(250,39));buscar.setBorder(BorderFactory.createCompoundBorder(BorderFactory.createLineBorder(new Color(218,218,213),1),BorderFactory.createEmptyBorder(6,14,6,12)));
-        JPanel izq=new JPanel(new BorderLayout());izq.setOpaque(false);izq.setBorder(BorderFactory.createEmptyBorder(10,18,10,0));izq.add(buscar,BorderLayout.CENTER);barra.add(izq,BorderLayout.WEST);
-        JLabel herramientas=new JLabel("♧    ⚙    ?      │    ●  "+sesion.getUsuario());herramientas.setFont(Estilo.NORMAL);herramientas.setForeground(Estilo.TEXTO_SUAVE);herramientas.setBorder(BorderFactory.createEmptyBorder(0,0,0,22));barra.add(herramientas,BorderLayout.EAST);
+        tituloSeccion.setFont(Estilo.NEGRITA);tituloSeccion.setForeground(Estilo.VERDE_OSCURO);
+        JPanel izq=new JPanel(new BorderLayout());izq.setOpaque(false);izq.setBorder(BorderFactory.createEmptyBorder(10,22,10,0));izq.add(tituloSeccion,BorderLayout.CENTER);barra.add(izq,BorderLayout.WEST);
+        JLabel herramientas=new JLabel(sesion.getUsuario()+"  ·  "+(sesion.esAdministrador()?"Administrador":"Usuario"));herramientas.setFont(Estilo.NORMAL);herramientas.setForeground(Estilo.TEXTO_SUAVE);herramientas.setBorder(BorderFactory.createEmptyBorder(0,0,0,22));barra.add(herramientas,BorderLayout.EAST);
         area.add(barra,BorderLayout.NORTH);contenido.setOpaque(false);area.add(contenido,BorderLayout.CENTER);return area;
     }
     private JPanel crearInicio(UsuarioSesion sesion,DashboardDAO.ResumenDashboard datos){
@@ -104,7 +106,20 @@ public class DashboardView extends JFrame {
     public void definirSeccion(String nombre,java.awt.Component componente){if(!botonesMenu.containsKey(nombre)||nombre.equals("Inicio"))return;contenido.add(componente,nombre);contenido.revalidate();contenido.repaint();}
     public void alNavegar(java.util.function.Consumer<String> accion){accionNavegar=accion;}
     public void alCerrarSesion(Runnable accion){accionCerrarSesion=accion;}
+    public void alCerrarVentana(Runnable accion) {
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent e) { accion.run(); }
+        });
+    }
+    public void actualizarInicio(UsuarioSesion sesion, DashboardDAO.ResumenDashboard resumen) {
+        contenido.remove(panelInicio);
+        panelInicio = crearInicio(sesion, resumen);
+        contenido.add(panelInicio, "Inicio");
+        contenido.revalidate();
+        contenido.repaint();
+    }
     public void mostrarSeccion(String nombre){
         if(!botonesMenu.containsKey(nombre))return;
+        tituloSeccion.setText(nombre);
         ((CardLayout)contenido.getLayout()).show(contenido,nombre);for(Map.Entry<String,JButton> e:botonesMenu.entrySet()){boolean on=e.getKey().equals(nombre);JButton b=e.getValue();b.setBackground(on?Estilo.VERDE:Estilo.LATERAL);b.setForeground(on?new Color(18,63,24):Estilo.TEXTO_SUAVE);b.setOpaque(true);}}
 }

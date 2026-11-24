@@ -1,8 +1,8 @@
 # Configurar la aplicación con MySQL
 
-1. Abre `nbproject/private/db.properties`.
+1. Copia `database/db.properties.example` a `nbproject/private/db.properties`. Crea las carpetas de destino si no existen.
 2. Escribe el usuario y la contraseña de MySQL que usas en DBeaver en `db.user` y `db.password`. El archivo está excluido de Git para no publicar la contraseña.
-3. Confirma que DBeaver tenga la base `modo_shake` creada y que hayas ejecutado el esquema SQL. La app se conecta a `localhost:3306`.
+3. Para una base nueva, ejecuta `database/instalacion_completa.sql` según el README. Si ya existe, sigue las migraciones indicadas allí. La conexión predeterminada es `localhost:3306`.
 4. Abre el proyecto en NetBeans y ejecútalo. En el inicio de sesión, usa **Configurar administrador inicial** para crear la primera cuenta con contraseña segura.
 5. Inicia sesión como ADMIN y crea el resto de cuentas desde **Empleados**; asigna a cada persona el perfil ADMIN o USUARIO.
 
