@@ -55,8 +55,8 @@ La prueba de integracion requiere MySQL accesible y permiso para crear y elimina
 java -cp 'build/classes;lib/*' VerificacionIntegracion "$PWD" "$PWD"
 ```
 
-Verifica auditoria, descuento unico, cancelacion sin devolucion duplicada, rollback por falta de receta o stock, pagos y reporte. La compilación y la verificación local pasaron en el proyecto original. MySQL en el puerto 3306 no respondió desde la sesión de Codex, por lo que queda pendiente ejecutar esta prueba con el servicio disponible.
+La compilación y las pruebas locales pasaron en el proyecto original. La prueba de integración ejecutada en PowerShell con MySQL local verificó el esquema, las rutinas, la auditoría, el descuento de inventario, la cancelación sin devolución duplicada, el rollback, los pagos y el reporte. La prueba usó un esquema temporal. Para habilitar las nuevas operaciones en la base existente, sigue los pasos de instalación de rutinas de esta guía.
 
 ## Historial Git
 
-Los cambios están en la rama local `avance-final`. Fusiona la rama a `main` cuando pase la prueba de integración.
+Los commits de `avance-final` se integraron en `main` después de pasar la prueba de integración.
