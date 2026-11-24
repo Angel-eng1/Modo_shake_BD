@@ -30,8 +30,17 @@ public class VerificacionIntegracion {
             if(t.startsWith("CHARACTER SET")) continue;
             if(t.startsWith("CREATE PROCEDURE") || t.startsWith("CREATE TRIGGER")) rutina=true;
             bloque.append(linea).append('\n');
-            if((rutina && t.equals("END;")) || (!rutina && t.endsWith(";"))) {
-                ejecutar(cn,bloque.toString()); bloque.setLength(0); rutina=false;
+            // En estos scripts solo el END de la rutina empieza en la primera columna.
+            if ((rutina && linea.stripTrailing().equals("END;")) || (!rutina && t.endsWith(";"))) {
+                try {
+                    ejecutar(cn, bloque.toString());
+                } catch (SQLException ex) {
+                    String sentencia = bloque.toString().lines().findFirst().orElse("");
+                    throw new SQLException(archivo.getFileName() + " [" + sentencia + "]: " + ex.getMessage(),
+                            ex.getSQLState(), ex.getErrorCode(), ex);
+                }
+                bloque.setLength(0);
+                rutina = false;
             }
         }
         comprobar(bloque.toString().isBlank(),"Bloque SQL incompleto en "+archivo);
