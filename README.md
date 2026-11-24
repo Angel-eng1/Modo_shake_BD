@@ -25,9 +25,9 @@ Usa el script consolidado de los avances 1 y 2 que acompana la entrega para crea
 
 ## Configuracion en NetBeans
 
-1. Abre esta carpeta como proyecto existente. Esta copia es independiente de la carpeta original.
+1. Abre esta carpeta como proyecto existente en NetBeans.
 2. Selecciona JDK 23 en Propiedades del proyecto si NetBeans solicita resolver la plataforma.
-3. Copia `database/db.properties.example` a `nbproject/private/db.properties` y completa tus credenciales locales, o utiliza `MODO_SHAKE_DB_URL`, `MODO_SHAKE_DB_USER` y `MODO_SHAKE_DB_PASSWORD`.
+3. Conserva `nbproject/private/db.properties` si tu proyecto ya tiene conexión. Para una instalación nueva, usa `database/db.properties.example` como plantilla para ese archivo, o utiliza `MODO_SHAKE_DB_URL`, `MODO_SHAKE_DB_USER` y `MODO_SHAKE_DB_PASSWORD`.
 4. Ejecuta `modo_shake.Modo_Shake`. No hay contrasenas ni configuracion privada incluidas en Git.
 
 ## Integracion implementada
@@ -55,8 +55,8 @@ La prueba de integracion requiere MySQL accesible y permiso para crear y elimina
 java -cp 'build/classes;lib/*' VerificacionIntegracion "$PWD" "$PWD"
 ```
 
-Verifica auditoria, descuento unico, cancelacion sin devolucion duplicada, rollback por falta de receta o stock, pagos y reporte. Durante la preparacion, la conexion al servidor agoto el tiempo de espera; la integracion SQL y las pantallas con datos reales quedan pendientes de ejecutar en el equipo con MySQL accesible.
+Verifica auditoria, descuento unico, cancelacion sin devolucion duplicada, rollback por falta de receta o stock, pagos y reporte. La compilación y la verificación local pasaron en el proyecto original. MySQL en el puerto 3306 no respondió desde la sesión de Codex, por lo que queda pendiente ejecutar esta prueba con el servicio disponible.
 
 ## Historial Git
 
-Los cambios estan separados en commits locales. Si recibes un archivo `Modo_Shake_historial.bundle`, puedes recuperar el repositorio con `git clone Modo_Shake_historial.bundle Modo_Shake`. No se ha publicado ni enviado a GitHub.
+Los cambios están en la rama local `avance-final`. Fusiona la rama a `main` cuando pase la prueba de integración.
