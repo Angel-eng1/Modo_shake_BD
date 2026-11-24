@@ -52,6 +52,25 @@ public class VerificacionIntegracion {
             try(ResultSet rs=cs.getResultSet()){rs.next();return rs.getInt("id_pedido");}
         }
     }
+    static void guardarReceta(Connection cn, int producto, String componentes) throws Exception {
+        try (CallableStatement cs = cn.prepareCall("{call sp_guardar_receta(?,?)}")) {
+            cs.setInt(1, producto);
+            cs.setString(2, componentes);
+            cs.execute();
+        }
+    }
+    static void recetaInvalida(Connection cn, int producto, String componentes) throws Exception {
+        try {
+            guardarReceta(cn, producto, componentes);
+            throw new AssertionError("Debio rechazar la receta");
+        } catch (SQLException esperado) {
+            comprobar("45000".equals(esperado.getSQLState()), "Validacion de receta en MySQL");
+        }
+        comprobar(numero(cn, "SELECT COUNT(*) FROM producto_ingrediente WHERE id_producto=1")==2,
+                "La receta anterior permanece completa");
+        comprobar(numero(cn, "SELECT cantidad_requerida FROM producto_ingrediente WHERE id_producto=1 AND id_ingrediente=1")==80,
+                "La validacion no modifica cantidades previas");
+    }
     public static void main(String[] args) throws Exception {
         raiz=Path.of(args[0]).toAbsolutePath();
         // La configuracion privada se lee por ConexionBD; no se imprime ni se copia.
@@ -64,6 +83,7 @@ public class VerificacionIntegracion {
                 cargar(cn,raiz.resolve("database/01_esquema_mysql.sql"));
                 cargar(cn,raiz.resolve("database/03_rutinas_avance_final.sql"));
                 cargar(cn,raiz.resolve("database/04_operaciones_aplicacion.sql"));
+                cargar(cn,raiz.resolve("database/05_recetas.sql"));
                 ejecutar(cn,"INSERT IGNORE INTO roles(id_rol,nombre) VALUES(1,'ADMIN'),(2,'USUARIO')");
                 ejecutar(cn,"CALL sp_crear_primer_admin('Prueba','Admin','prueba','PBKDF2$prueba')");
                 ejecutar(cn,"INSERT INTO categorias(id_categoria,nombre) VALUES(1,'Batidos')");
@@ -74,15 +94,35 @@ public class VerificacionIntegracion {
                 ejecutar(cn,"CALL sp_guardar_ingrediente(0,'Leche','ml',10,'Activo')");
                 ejecutar(cn,"CALL sp_ajustar_inventario(1,1000)");
                 ejecutar(cn,"CALL sp_ajustar_inventario(2,1000)");
-                ejecutar(cn,"INSERT INTO producto_ingrediente VALUES(1,1,80),(1,2,120)");
+                guardarReceta(cn,1,"[{\"ingrediente\":1,\"cantidad\":80},{\"ingrediente\":2,\"cantidad\":120}]");
+                recetaInvalida(cn,1,"[]");
+                recetaInvalida(cn,1,"[{\"ingrediente\":1,\"cantidad\":0}]");
+                recetaInvalida(cn,1,"[{\"ingrediente\":1,\"cantidad\":-1}]");
+                recetaInvalida(cn,1,"[{\"ingrediente\":1,\"cantidad\":0.0001}]");
+                recetaInvalida(cn,1,"[{\"ingrediente\":1,\"cantidad\":10000000}]");
+                recetaInvalida(cn,1,"[{\"ingrediente\":1,\"cantidad\":1},{\"ingrediente\":1,\"cantidad\":2}]");
+                recetaInvalida(cn,1,"[{\"ingrediente\":99999,\"cantidad\":1}]");
+                recetaInvalida(cn,99999,"[{\"ingrediente\":1,\"cantidad\":1}]");
+                recetaInvalida(cn,1,"[{\"ingrediente\":1,\"cantidad\":\"80\"}]");
+                ejecutar(cn,"CALL sp_guardar_ingrediente(2,'Leche','ml',10,'Inactivo')");
+                recetaInvalida(cn,1,"[{\"ingrediente\":2,\"cantidad\":120}]");
+                ejecutar(cn,"CALL sp_guardar_ingrediente(2,'Leche','ml',10,'Activo')");
+                guardarReceta(cn,1,"[{\"ingrediente\":1,\"cantidad\":0.125}]");
+                comprobar(numero(cn,"SELECT COUNT(*) FROM producto_ingrediente WHERE id_producto=1")==1,
+                        "Guardar reemplaza la composicion completa");
+                comprobar(numero(cn,"SELECT COUNT(*) FROM producto_ingrediente WHERE id_producto=1 AND cantidad_requerida=0.125")==1,
+                        "La cantidad conserva sus tres decimales");
+                guardarReceta(cn,1,"[{\"ingrediente\":1,\"cantidad\":80},{\"ingrediente\":2,\"cantidad\":120}]");
                 int id=pedido(cn,"[{\"producto\":1,\"cantidad\":2}]");
                 comprobar(numero(cn,"SELECT cantidad_actual FROM inventario WHERE ingrediente_id=1")==840,"Descuento al registrar");
                 ejecutar(cn,"CALL sp_cambiar_estado_pedido("+id+",'En preparación')");
                 comprobar(numero(cn,"SELECT cantidad_actual FROM inventario WHERE ingrediente_id=1")==840,"No descontar dos veces");
+                guardarReceta(cn,1,"[{\"ingrediente\":1,\"cantidad\":20},{\"ingrediente\":2,\"cantidad\":30}]");
                 ejecutar(cn,"CALL sp_cambiar_estado_pedido("+id+",'Cancelado')");
                 comprobar(numero(cn,"SELECT cantidad_actual FROM inventario WHERE ingrediente_id=1")==1000,"Devolver consumo");
                 ejecutar(cn,"CALL sp_cambiar_estado_pedido("+id+",'Cancelado')");
                 comprobar(numero(cn,"SELECT cantidad_actual FROM inventario WHERE ingrediente_id=1")==1000,"No devolver dos veces");
+                guardarReceta(cn,1,"[{\"ingrediente\":1,\"cantidad\":80},{\"ingrediente\":2,\"cantidad\":120}]");
                 long antes=numero(cn,"SELECT COUNT(*) FROM pedidos");
                 ejecutar(cn,"CALL sp_guardar_producto(0,1,'Sin receta','',100,'Activo')");
                 try {pedido(cn,"[{\"producto\":1,\"cantidad\":1},{\"producto\":2,\"cantidad\":1}]");throw new AssertionError("Debio fallar");}
@@ -101,7 +141,7 @@ public class VerificacionIntegracion {
                     cs.setDate(1,java.sql.Date.valueOf("2000-01-01")); cs.setDate(2,java.sql.Date.valueOf("2099-12-31"));
                     try(ResultSet rs=cs.executeQuery()){comprobar(rs.next(),"Reporte");}
                 }
-                System.out.println("OK: esquema, rutinas, auditoria, inventario, cancelacion, rollback, pagos y reporte.");
+                System.out.println("OK: esquema, recetas, validaciones, consumo historico, auditoria, inventario, cancelacion, rollback, pagos y reporte.");
             } finally { cn.setCatalog("modo_shake"); ejecutar(cn,"DROP DATABASE "+esquema); }
         }
     }
